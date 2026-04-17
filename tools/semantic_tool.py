@@ -5,9 +5,9 @@ from functools import lru_cache
 from typing import Any
 
 import chromadb
-from openai import OpenAI
 
-from config import CHROMA_COLLECTION, CHROMA_DIR, EMBED_MODEL, OPENAI_API_KEY
+from config import CHROMA_COLLECTION, CHROMA_DIR, EMBED_MODEL
+from openai_client import get_client
 
 SEMANTIC_SCHEMA: dict[str, Any] = {
     "type": "function",
@@ -44,13 +44,8 @@ def _collection():
     return chroma.get_or_create_collection(name=CHROMA_COLLECTION, metadata={"hnsw:space": "cosine"})
 
 
-@lru_cache(maxsize=1)
-def _openai() -> OpenAI:
-    return OpenAI(api_key=OPENAI_API_KEY)
-
-
 def _embed(text: str) -> list[float]:
-    resp = _openai().embeddings.create(model=EMBED_MODEL, input=[text])
+    resp = get_client().embeddings.create(model=EMBED_MODEL, input=[text])
     return resp.data[0].embedding
 
 

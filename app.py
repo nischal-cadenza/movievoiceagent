@@ -20,14 +20,11 @@ def _init_state() -> None:
     if "messages" not in st.session_state:
         st.session_state.messages = agent_mod.initial_history()
     if "turns" not in st.session_state:
-        st.session_state.turns = []  # list[dict]: {role, text, tables, recs, audio_mp3, clarification}
+        st.session_state.turns = []  # list[dict]: {role, text, tables, recs, audio_mp3}
     if "last_audio_id" not in st.session_state:
         st.session_state.last_audio_id = None
     if "pending_clarification" not in st.session_state:
         st.session_state.pending_clarification = None
-    if "dataset_loaded" not in st.session_state:
-        load_df()  # warm cache
-        st.session_state.dataset_loaded = True
 
 
 def _sidebar() -> None:
@@ -169,13 +166,9 @@ def _handle_user_message(user_text: str) -> None:
         "trace": response.reasoning_trace,
         "audio_mp3": mp3,
         "autoplay": True,
-        "clarification": response.clarification,
     })
 
-    if response.clarification:
-        st.session_state.pending_clarification = response.clarification
-    else:
-        st.session_state.pending_clarification = None
+    st.session_state.pending_clarification = response.clarification
 
 
 def _clarification_panel() -> None:

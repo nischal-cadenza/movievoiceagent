@@ -9,23 +9,19 @@ from __future__ import annotations
 
 import sys
 import time
-from pathlib import Path
 
 import chromadb
 import pandas as pd
-from openai import OpenAI
-
-# Ensure parent dir is importable when run as `python -m data.build_index`
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from config import CHROMA_COLLECTION, CHROMA_DIR, EMBED_MODEL, OPENAI_API_KEY
 from data.loader import load_df
+from openai_client import get_client
 
 BATCH = 100
 
 
-def _embed(client: OpenAI, texts: list[str]) -> list[list[float]]:
-    resp = client.embeddings.create(model=EMBED_MODEL, input=texts)
+def _embed(texts: list[str]) -> list[list[float]]:
+    resp = get_client().embeddings.create(model=EMBED_MODEL, input=texts)
     return [d.embedding for d in resp.data]
 
 
@@ -54,7 +50,6 @@ def build(force: bool = False) -> None:
             name=CHROMA_COLLECTION, metadata={"hnsw:space": "cosine"}
         )
 
-    client = OpenAI(api_key=OPENAI_API_KEY)
     start = time.time()
 
     for batch_start in range(0, total, BATCH):
@@ -77,7 +72,7 @@ def build(force: bool = False) -> None:
             }
             for row in batch.itertuples()
         ]
-        embeddings = _embed(client, docs)
+        embeddings = _embed(docs)
         collection.upsert(ids=ids, embeddings=embeddings, documents=docs, metadatas=metas)
         print(f"[build_index] upserted {batch_start + len(batch)}/{total}")
 

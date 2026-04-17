@@ -5,10 +5,9 @@ import json
 from dataclasses import dataclass, field
 from typing import Any
 
-from openai import OpenAI
-
-from config import CHAT_MODEL, MAX_AGENT_ITERATIONS, OPENAI_API_KEY
+from config import CHAT_MODEL, MAX_AGENT_ITERATIONS
 from data.loader import SCHEMA_DESCRIPTION
+from openai_client import get_client
 from tools import TOOL_SCHEMAS, dispatch
 from tools.clarify_tool import CLARIFY_MARKER
 from tools.recommend_tool import recommend_similar as _recommend
@@ -54,10 +53,6 @@ class AgentResponse:
     reasoning_trace: list[str] = field(default_factory=list)
 
 
-def _client() -> OpenAI:
-    return OpenAI(api_key=OPENAI_API_KEY)
-
-
 def _message_to_dict(msg) -> dict[str, Any]:
     d: dict[str, Any] = {"role": msg.role, "content": msg.content or ""}
     if msg.tool_calls:
@@ -85,7 +80,7 @@ def run(messages: list[dict[str, Any]], user_text: str) -> AgentResponse:
     messages.append({"role": "user", "content": user_text})
 
     resp = AgentResponse(text="")
-    client = _client()
+    client = get_client()
 
     for _ in range(MAX_AGENT_ITERATIONS):
         completion = client.chat.completions.create(

@@ -5,16 +5,12 @@ Exposes a singleton `get_conn()` that returns a DuckDB connection with a
 """
 from __future__ import annotations
 
-import threading
 from functools import lru_cache
 
 import duckdb
-import numpy as np
 import pandas as pd
 
 from config import CSV_PATH
-
-_LOCK = threading.Lock()
 
 
 def _clean(df: pd.DataFrame) -> pd.DataFrame:
@@ -77,19 +73,13 @@ def load_df() -> pd.DataFrame:
     return _clean(raw)
 
 
-_conn: duckdb.DuckDBPyConnection | None = None
-
-
+@lru_cache(maxsize=1)
 def get_conn() -> duckdb.DuckDBPyConnection:
-    global _conn
-    with _LOCK:
-        if _conn is None:
-            _conn = duckdb.connect(":memory:")
-            df = load_df()  # noqa: F841 — referenced by DuckDB via variable name
-            _conn.register("movies_df", df)
-            _conn.execute("CREATE OR REPLACE TABLE movies AS SELECT * FROM movies_df")
-            _conn.execute("CREATE INDEX idx_title ON movies(series_title)")
-    return _conn
+    conn = duckdb.connect(":memory:")
+    conn.register("movies_df", load_df())
+    conn.execute("CREATE OR REPLACE TABLE movies AS SELECT * FROM movies_df")
+    conn.execute("CREATE INDEX idx_title ON movies(series_title)")
+    return conn
 
 
 SCHEMA_DESCRIPTION = """

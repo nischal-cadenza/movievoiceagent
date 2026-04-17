@@ -7,7 +7,7 @@ from __future__ import annotations
 from typing import Any
 
 from data.loader import get_conn
-from tools._util import to_jsonable
+from tools._util import normalize_rows
 
 RECOMMEND_SCHEMA: dict[str, Any] = {
     "type": "function",
@@ -97,7 +97,7 @@ def recommend_similar(reference_titles: list[str], limit: int = 5) -> dict[str, 
         scored.append({**c, "score": round(score, 3)})
 
     scored.sort(key=lambda x: x["score"], reverse=True)
-    recs = [{k: to_jsonable(v) for k, v in r.items()} for r in scored[:limit]]
+    recs = normalize_rows(scored[:limit])
 
     return {
         "recommendations": recs,
